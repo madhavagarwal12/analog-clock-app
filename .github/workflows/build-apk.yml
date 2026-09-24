@@ -24,15 +24,13 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-
-      - name: Grant Execute Permission to Gradle Wrapper
-        run: |
-          chmod +x android_analog_clock/gradlew
+        with:
+          gradle-version: '8.9'
 
       - name: Build Debug APK with Gradle
         working-directory: ./android_analog_clock
         run: |
-          ./gradlew assembleDebug --no-daemon
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload Generated APK Artifact
         uses: actions/upload-artifact@v4
