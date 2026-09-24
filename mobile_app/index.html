@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Bakingo Mobile App | Artisanal Confectionery</title>
+  
+  <!-- PWA & Mobile Metas -->
+  <meta name="theme-color" content="#ad0d18" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Bakingo" />
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Great+Vibes&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: '#ad0d18',
+            'primary-container': '#d12d2d',
+            'primary-light': '#ffeeec',
+            surface: '#fbf9f9',
+            'surface-white': '#ffffff',
+            'surface-dim': '#f3f0ef',
+            'on-surface': '#1b1c1c',
+            secondary: '#5f5e5e',
+            'secondary-light': '#8f6f6c',
+            gold: '#cfa052'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            'display-lg': ['Inter', 'sans-serif'],
+            cursive: ['Great Vibes', 'cursive']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom App Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="app-viewport-wrapper" id="app-viewport-wrapper">
+    <!-- Desktop Controls Toolbar -->
+    <div class="desktop-controls-bar">
+      <div class="flex items-center gap-1.5 font-bold">
+        <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+        <span>Bakingo Mobile App</span>
+      </div>
+      <div class="w-px h-4 bg-white/20"></div>
+      <button id="btn-iphone" class="active-device" onclick="App.setDeviceMode('iphone')">
+        <span class="material-symbols-outlined text-sm">phone_iphone</span> iPhone 16 Pro
+      </button>
+      <button id="btn-android" onclick="App.setDeviceMode('android')">
+        <span class="material-symbols-outlined text-sm">smartphone</span> Android
+      </button>
+      <button id="btn-full" onclick="App.setDeviceMode('fullscreen')">
+        <span class="material-symbols-outlined text-sm">fullscreen</span> Fullscreen Mobile
+      </button>
+    </div>
+
+    <!-- Phone Device Shell Frame -->
+    <div class="device-frame" id="device-frame">
+      <div class="mobile-app-root">
+
+        <!-- Dynamic Island Hardware Notch -->
+        <div class="dynamic-island" id="dynamic-island">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#1c1c1e] border border-[#2c2c2e]"></div>
+          <div class="w-3 h-3 rounded-full bg-[#0a0a0c]"></div>
+        </div>
+
+        <!-- Mobile OS Status Bar -->
+        <div class="mobile-status-bar">
+          <span id="status-clock">9:41</span>
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="material-symbols-outlined text-sm">signal_cellular_4_bar</span>
+            <span class="material-symbols-outlined text-sm">wifi</span>
+            <span class="material-symbols-outlined text-sm">battery_full</span>
+          </div>
+        </div>
+
+        <!-- Scrollable Mobile Content Viewport -->
+        <main class="mobile-screen-viewport" id="mobile-viewport">
+          <div id="mobile-screen-content">
+            <!-- Dynamic tab content rendered here by app.js -->
+          </div>
+        </main>
+
+        <!-- Fixed Bottom App Navigation Bar -->
+        <nav class="mobile-bottom-nav">
+          <button class="nav-item-btn active" data-tab="home" onclick="App.switchTab('home')">
+            <div class="nav-icon-container">
+              <span class="material-symbols-outlined text-xl">home</span>
+            </div>
+            <span>Home</span>
+          </button>
+
+          <button class="nav-item-btn" data-tab="menu" onclick="App.switchTab('menu')">
+            <div class="nav-icon-container">
+              <span class="material-symbols-outlined text-xl">restaurant_menu</span>
+            </div>
+            <span>Explore</span>
+          </button>
+
+          <button class="nav-item-btn" data-tab="studio" onclick="App.switchTab('studio')">
+            <div class="nav-icon-container">
+              <span class="material-symbols-outlined text-xl">palette</span>
+            </div>
+            <span>Cake Studio</span>
+          </button>
+
+          <button class="nav-item-btn" data-tab="gifts" onclick="App.switchTab('gifts')">
+            <div class="nav-icon-container">
+              <span class="material-symbols-outlined text-xl">featured_seasonal_and_gifts</span>
+            </div>
+            <span>Gifts</span>
+          </button>
+
+          <button class="nav-item-btn" data-tab="cart" onclick="App.switchTab('cart')">
+            <div class="nav-icon-container">
+              <span class="material-symbols-outlined text-xl">shopping_bag</span>
+            </div>
+            <span>Bag</span>
+            <span class="nav-badge-pill" id="cart-nav-badge" style="display: none;">0</span>
+          </button>
+        </nav>
+
+        <!-- Home Indicator Gesture Bar -->
+        <div class="home-indicator-bar"></div>
+
+        <!-- Universal Toast Notification Pill -->
+        <div class="mobile-toast" id="app-toast"></div>
+
+        <!-- Universal Bottom Sheet Modal Drawer -->
+        <div class="bottom-sheet-backdrop" id="generic-bottom-sheet">
+          <div class="bottom-sheet-content" id="generic-sheet-content"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

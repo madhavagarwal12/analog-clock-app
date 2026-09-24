@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Analog Clock</string>
+    <string name="mode_sweeping">Sweeping Hand</string>
+    <string name="mode_ticking">Mechanical Ticking</string>
+    <string name="sound_on">Tick Audio ON</string>
+    <string name="sound_off">Muted</string>
+    <string name="theme_obsidian">Obsidian Black</string>
+    <string name="theme_ivory">Artisanal Ivory</string>
+    <string name="theme_minimal">Minimalist Chrome</string>
+</resources>

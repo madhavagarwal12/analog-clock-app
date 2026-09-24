@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Analog Clock Mobile App | Live Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #0c0d10;
+      color: #fdfcfb;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .device-shell {
+      width: 390px;
+      height: 844px;
+      max-width: 100%;
+      max-height: 100vh;
+      background: #0f1014;
+      border-radius: 48px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 0 10px #22242b;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+      padding: 24px 20px 28px;
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 1;
+      filter: drop-shadow(0 12px 28px rgba(0,0,0,0.5));
+    }
+    .digital-font {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-base font-extrabold tracking-wider text-white uppercase">Analog Clock</h1>
+        <p class="text-[11px] font-medium text-gray-400">Native Jetpack Compose Engine</p>
+      </div>
+      <div class="px-2.5 py-1 rounded-full bg-[#ad0d18]/20 border border-[#ad0d18]/40 text-[#ffb3ac] text-[10px] font-bold">
+        60 FPS
+      </div>
+    </div>
+
+    <!-- Analog Clock Canvas -->
+    <div class="flex items-center justify-center my-auto py-2">
+      <canvas id="clockCanvas" width="700" height="700"></canvas>
+    </div>
+
+    <!-- Controls HUD -->
+    <div class="space-y-3">
+      <!-- Digital HUD -->
+      <div class="p-3 bg-white/5 rounded-2xl border border-white/10 text-center">
+        <div id="digitalTime" class="text-2xl font-bold digital-font text-white tracking-widest">10:45:00 AM</div>
+        <div id="digitalDate" class="text-[11px] text-gray-400 font-medium mt-0.5">Thursday, 24 September 2026 • IST</div>
+      </div>
+
+      <!-- Mode Selector -->
+      <div class="p-1 bg-[#181920] rounded-2xl flex border border-white/5 text-xs font-semibold">
+        <button id="btnSweep" onclick="setMode('sweeping')" class="flex-1 py-2 rounded-xl bg-[#ad0d18] text-white transition-all">
+          Smooth Sweeping
+        </button>
+        <button id="btnTick" onclick="setMode('ticking')" class="flex-1 py-2 rounded-xl text-gray-400 hover:text-white transition-all">
+          Mechanical Ticking
+        </button>
+      </div>
+
+      <!-- Sound & Theme Row -->
+      <div class="flex items-center justify-between pt-1">
+        <button id="btnSound" onclick="toggleSound()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 text-xs font-semibold text-white border border-white/10 active:scale-95 transition-transform">
+          <span class="material-symbols-outlined text-sm" id="soundIcon">volume_off</span>
+          <span id="soundLabel">Sound: Muted</span>
+        </button>
+
+        <!-- Theme Pickers -->
+        <div class="flex gap-2">
+          <button onclick="setTheme('obsidian')" class="w-7 h-7 rounded-full bg-[#14151b] border-2 border-[#ad0d18] active:scale-95" title="Obsidian Black"></button>
+          <button onclick="setTheme('ivory')" class="w-7 h-7 rounded-full bg-[#fbf9f6] border border-gray-400 active:scale-95" title="Artisanal Ivory"></button>
+          <button onclick="setTheme('minimal')" class="w-7 h-7 rounded-full bg-[#00e5ff] border border-white/20 active:scale-95" title="Minimalist Cyan"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('clockCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let mode = 'sweeping';
+    let soundEnabled = false;
+    let currentTheme = 'obsidian';
+    let lastTickedSecond = -1;
+
+    // Web Audio Synthesizer for Mechanical Clicks
+    let audioCtx = null;
+    function playTickSound(isEven) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(isEven ? 2400 : 1800, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.025);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.025);
+      } catch (e) {}
+    }
+
+    const themes = {
+      obsidian: {
+        dialBg: '#14151B',
+        outerBezel: '#282A33',
+        innerRing: '#1F2128',
+        majorTicks: '#E5E5EA',
+        minorTicks: '#50525C',
+        numerals: '#F2F2F7',
+        hourHand: '#ECECEE',
+        minuteHand: '#C7C7CC',
+        secondHand: '#D12D2D',
+        capColor: '#E5E5EA'
+      },
+      ivory: {
+        dialBg: '#FBF9F6',
+        outerBezel: '#D5CFC9',
+        innerRing: '#E8E2DC',
+        majorTicks: '#2C2B2A',
+        minorTicks: '#AAA5A0',
+        numerals: '#1F1E1D',
+        hourHand: '#242322',
+        minuteHand: '#4A4846',
+        secondHand: '#AD0D18',
+        capColor: '#CFA052'
+      },
+      minimal: {
+        dialBg: '#090A0C',
+        outerBezel: '#1C1E24',
+        innerRing: '#121418',
+        majorTicks: '#00E5FF',
+        minorTicks: '#2C3E50',
+        numerals: '#E0F7FA',
+        hourHand: '#FFFFFF',
+        minuteHand: '#B2EBF2',
+        secondHand: '#FF3366',
+        capColor: '#00E5FF'
+      }
+    };
+
+    function setMode(newMode) {
+      mode = newMode;
+      document.getElementById('btnSweep').className = `flex-1 py-2 rounded-xl transition-all ${mode === 'sweeping' ? 'bg-[#ad0d18] text-white' : 'text-gray-400 hover:text-white'}`;
+      document.getElementById('btnTick').className = `flex-1 py-2 rounded-xl transition-all ${mode === 'ticking' ? 'bg-[#ad0d18] text-white' : 'text-gray-400 hover:text-white'}`;
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const label = document.getElementById('soundLabel');
+      const icon = document.getElementById('soundIcon');
+      const btn = document.getElementById('btnSound');
+      if (soundEnabled) {
+        label.textContent = 'Tick Sound: ON';
+        icon.textContent = 'volume_up';
+        btn.className = 'flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-green-700 text-xs font-semibold text-white border border-green-600 active:scale-95 transition-transform';
+        playTickSound(true);
+      } else {
+        label.textContent = 'Sound: Muted';
+        icon.textContent = 'volume_off';
+        btn.className = 'flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 text-xs font-semibold text-white border border-white/10 active:scale-95 transition-transform';
+      }
+    }
+
+    function setTheme(themeKey) {
+      currentTheme = themeKey;
+    }
+
+    function renderClock() {
+      const now = new Date();
+      const hours = now.getHours() % 12;
+      const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
+      const millis = now.getMilliseconds();
+
+      // Trigger Audio Tick
+      if (seconds !== lastTickedSecond) {
+        lastTickedSecond = seconds;
+        playTickSound(seconds % 2 === 0);
+      }
+
+      // Update Digital Readout
+      const displayHours = (now.getHours() % 12) || 12;
+      const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+      document.getElementById('digitalTime').textContent = 
+        `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')} ${ampm}`;
+      
+      const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('digitalDate').textContent = `${now.toLocaleDateString('en-US', options)} • IST`;
+
+      // Angles calculation
+      let secondAngle, minuteAngle, hourAngle;
+      if (mode === 'sweeping') {
+        const totalSec = seconds + millis / 1000;
+        const totalMin = minutes + totalSec / 60;
+        const totalHr = hours + totalMin / 60;
+        secondAngle = totalSec * 6 * Math.PI / 180;
+        minuteAngle = totalMin * 6 * Math.PI / 180;
+        hourAngle = totalHr * 30 * Math.PI / 180;
+      } else {
+        const totalMin = minutes + seconds / 60;
+        const totalHr = hours + minutes / 60;
+        secondAngle = seconds * 6 * Math.PI / 180;
+        minuteAngle = totalMin * 6 * Math.PI / 180;
+        hourAngle = totalHr * 30 * Math.PI / 180;
+      }
+
+      const t = themes[currentTheme];
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const r = canvas.width / 2 - 20;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Outer Bezel
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.fillStyle = t.outerBezel;
+      ctx.fill();
+
+      // Dial Background
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.92, 0, 2 * Math.PI);
+      ctx.fillStyle = t.dialBg;
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = t.innerRing;
+      ctx.stroke();
+
+      // Ticks & Numerals
+      ctx.font = `bold ${r * 0.13}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = t.numerals;
+
+      for (let i = 0; i < 60; i++) {
+        const ang = i * 6 * Math.PI / 180;
+        const isMajor = i % 5 === 0;
+        const startR = isMajor ? r * 0.80 : r * 0.85;
+        const endR = r * 0.89;
+
+        const x1 = cx + startR * Math.sin(ang);
+        const y1 = cy - startR * Math.cos(ang);
+        const x2 = cx + endR * Math.sin(ang);
+        const y2 = cy - endR * Math.cos(ang);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = isMajor ? t.majorTicks : t.minorTicks;
+        ctx.lineWidth = isMajor ? 6 : 2.5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        if (isMajor) {
+          const num = i === 0 ? 12 : i / 5;
+          const numR = r * 0.68;
+          const nx = cx + numR * Math.sin(ang);
+          const ny = cy - numR * Math.cos(ang);
+          ctx.fillText(num.toString(), nx, ny);
+        }
+      }
+
+      // Watermark Text
+      ctx.font = `bold ${r * 0.055}px Inter, sans-serif`;
+      ctx.fillStyle = t.numerals;
+      ctx.globalAlpha = 0.5;
+      ctx.fillText('CHRONOMETER', cx, cy - r * 0.32);
+      ctx.globalAlpha = 1.0;
+      ctx.font = `bold ${r * 0.038}px Inter, sans-serif`;
+      ctx.fillStyle = t.secondHand;
+      ctx.fillText('AUTOMATIC 60FPS', cx, cy + r * 0.36);
+
+      // Draw Hand helper
+      function drawHand(angle, length, width, color) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(-width, width * 2);
+        ctx.lineTo(width, width * 2);
+        ctx.lineTo(width * 0.4, -length);
+        ctx.lineTo(0, -length - 12);
+        ctx.lineTo(-width * 0.4, -length);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Hour & Minute Hands
+      drawHand(hourAngle, r * 0.48, r * 0.045, t.hourHand);
+      drawHand(minuteAngle, r * 0.72, r * 0.035, t.minuteHand);
+
+      // Second Hand
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(secondAngle);
+      ctx.beginPath();
+      ctx.moveTo(0, r * 0.22);
+      ctx.lineTo(0, -r * 0.82);
+      ctx.strokeStyle = t.secondHand;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Counter-balance circle
+      ctx.beginPath();
+      ctx.arc(0, r * 0.14, r * 0.045, 0, 2 * Math.PI);
+      ctx.strokeStyle = t.secondHand;
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+      ctx.restore();
+
+      // Center Cap
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.055, 0, 2 * Math.PI);
+      ctx.fillStyle = t.capColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.025, 0, 2 * Math.PI);
+      ctx.fillStyle = t.secondHand;
+      ctx.fill();
+
+      requestAnimationFrame(renderClock);
+    }
+
+    requestAnimationFrame(renderClock);
+  </script>
+</body>
+</html>

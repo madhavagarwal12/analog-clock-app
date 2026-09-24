@@ -1,0 +1,80 @@
+================================================================================
+           NATIVE ANDROID ANALOG CLOCK MOBILE APP - BUILD SPECIFICATION
+================================================================================
+
+PROJECT NAME: Android Analog Clock (Jetpack Compose & Canvas)
+TARGET OS: Android 8.0+ (API Level 26 to API Level 35)
+LANGUAGE: Kotlin 2.0+
+UI TOOLKIT: Jetpack Compose with Hardware-Accelerated Canvas
+AUDIO ENGINE: Low-Latency PCM / AudioTrack Synthesizer
+
+--------------------------------------------------------------------------------
+1. PROJECT ARCHITECTURE & DIRECTORY STRUCTURE
+--------------------------------------------------------------------------------
+android_analog_clock/
+├── build.gradle.kts                        # Root project build configuration
+├── settings.gradle.kts                     # Project module settings
+├── gradle.properties                       # JVM & AndroidX optimization flags
+├── gradle/
+│   └── wrapper/
+│       └── gradle-wrapper.properties       # Gradle 8.7+ wrapper configuration
+├── gradlew                                 # Linux/macOS build script
+├── gradlew.bat                             # Windows build script
+└── app/
+    ├── build.gradle.kts                    # App dependencies & Compose setup
+    └── src/
+        └── main/
+            ├── AndroidManifest.xml         # Application permissions & entry
+            ├── java/com/bakingo/analogclock/
+            │   ├── MainActivity.kt         # Edge-to-edge Compose Activity
+            │   ├── audio/
+            │   │   └── TickSoundEngine.kt  # Escapement click audio synthesizer
+            │   ├── model/
+            │   │   └── ClockPreferences.kt # Motion mode, sound & theme data
+            │   └── ui/
+            │       ├── AnalogClockCanvas.kt# 60fps Canvas renderer (Dial/Hands)
+            │       ├── ClockViewModel.kt   # High-precision time StateFlow
+            │       ├── ClockTheme.kt       # Obsidian, Ivory, Classic themes
+            │       └── ControlsOverlay.kt  # Mode & sound interactive HUD
+            └── res/
+                ├── values/
+                │   ├── colors.xml          # Primary brand & dial colors
+                │   ├── strings.xml         # Localized app strings
+                │   └── themes.xml          # Android Material3 App Theme
+                └── mipmap-anydpi-v26/
+                    └── ic_launcher.xml     # Adaptive vector launcher icon
+
+--------------------------------------------------------------------------------
+2. KEY FEATURE SPECIFICATIONS
+--------------------------------------------------------------------------------
+A. HARDWARE-ACCELERATED 60 FPS CANVAS RENDERING
+   - Custom drawWithCache Compose pipeline for maximum battery efficiency
+   - Multi-layered dial:
+     1. Outer Bezel with metallic gradient & ambient shadow
+     2. 12 Major Hour Numerals / Markers
+     3. 60 Precision Minute/Second Tick Indices
+     4. Tapered Sword Hour Hand with depth shadow
+     5. Precision Elongated Minute Hand
+     6. Signature High-Contrast Needle Second Hand with counter-balance ring
+     7. Metallic Center Cap & Pivot Ring
+
+B. MOTION PHYSICS MODES
+   1. Smooth Sweeping (Chronometer Mode):
+      - Continuous angle calculation based on sub-second milliseconds:
+        secondAngle = (seconds + millis / 1000f) * 6.0f
+        minuteAngle = (minutes + seconds / 60f) * 6.0f
+        hourAngle   = ((hours % 12) + minutes / 60f) * 30.0f
+   2. Mechanical Ticking (Escapement Mode):
+      - Discrete second-by-second step with subtle spring recoil bounce.
+
+C. LOW-LATENCY TICK AUDIO
+   - Generates realistic acoustic click sounds on each second transition using
+     pure synthesized PCM pulses without needing external heavy audio files.
+
+D. CONTROLS HUD & THEMES
+   - Toggle: [Smooth Sweeping] vs [Mechanical Ticking]
+   - Toggle: [Sound ON (Click)] vs [Muted]
+   - Theme Switcher: Luxury Obsidian Black, Warm Ivory Cream, Modern Minimalist
+   - Real-time Digital Time, Date & Timezone overlay
+
+================================================================================
